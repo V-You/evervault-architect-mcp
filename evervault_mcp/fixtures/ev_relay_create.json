@@ -1,0 +1,28 @@
+{
+    "id": "relay_01HQXYZ",
+    "subdomain": "api-example-com.relay.evervault.com",
+    "destinationDomain": "api.example.com",
+    "encryptEmptyStrings": false,
+    "routes": [
+        {
+            "method": "POST",
+            "path": "/checkout/**",
+            "request": [
+                {
+                    "action": "encrypt",
+                    "selections": [
+                        {
+                            "type": "json",
+                            "selector": "$.card.number"
+                        },
+                        {
+                            "type": "json",
+                            "selector": "$.card.cvv"
+                        }
+                    ]
+                }
+            ],
+            "response": []
+        }
+    ]
+}

@@ -1,10 +1,12 @@
 """Evervault Architect MCP server.
 
-FastMCP server with 4 tools (Phase 1 MVP):
+FastMCP server with 6 tools (Phase 1 + 2):
 - ev_encrypt: encrypt data via Evervault API
 - ev_inspect: inspect encrypted tokens for metadata
 - ev_schema_suggest: analyze schemas for PII/PCI fields
 - ev_docs_query: query bundled Evervault documentation
+- ev_relay_create: create an Evervault Relay
+- ev_relay_list: list all Relays for the current app
 """
 
 from __future__ import annotations
@@ -122,6 +124,46 @@ async def ev_docs_query(question: str) -> dict[str, Any]:
         "documentation": content,
         "_source": "local",
     }
+
+
+@mcp.tool()
+@with_fallback("ev_relay_create")
+async def ev_relay_create(
+    destination_domain: str,
+    routes: list[dict[str, Any]],
+    encrypt_empty_strings: bool = False,
+) -> dict[str, Any]:
+    """Create an Evervault Relay -- a network proxy that encrypts/decrypts data in transit.
+
+    The tool accepts snake_case parameters; the API client maps them to
+    camelCase for the Evervault API.
+
+    Args:
+        destination_domain: the target API domain (e.g. "api.example.com").
+        routes: array of route objects. Each route has method, path, request,
+            and response arrays with action/selections. See PRD for structure.
+        encrypt_empty_strings: whether to encrypt empty string values.
+    """
+    client = _get_client()
+    result = await client.create_relay(
+        destination_domain=destination_domain,
+        routes=routes,
+        encrypt_empty_strings=encrypt_empty_strings,
+    )
+    return {"relay": result}
+
+
+@mcp.tool()
+@with_fallback("ev_relay_list")
+async def ev_relay_list() -> dict[str, Any]:
+    """List all configured Relays for the current Evervault app.
+
+    Returns relays with their IDs, subdomains, destination domains,
+    and route configurations.
+    """
+    client = _get_client()
+    relays = await client.list_relays()
+    return {"relays": relays, "count": len(relays)}
 
 
 # -- entry point --------------------------------------------------------------

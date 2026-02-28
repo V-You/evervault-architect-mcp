@@ -47,6 +47,9 @@ def load_fixture(tool_name: str) -> dict[str, Any]:
         return {"error": {"code": "no_fixture", "message": f"No fixture for {tool_name}"}}
     with open(fixture_path) as f:
         data = json.load(f)
+    # normalize: always return a dict so we can attach _source
+    if isinstance(data, list):
+        return {"data": data, "_source": "mock"}
     data["_source"] = "mock"
     return data
 

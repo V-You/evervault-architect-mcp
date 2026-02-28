@@ -1,0 +1,68 @@
+[
+    {
+        "id": "relay_01HQXYZ",
+        "subdomain": "api-example-com.relay.evervault.com",
+        "destinationDomain": "api.example.com",
+        "encryptEmptyStrings": false,
+        "routes": [
+            {
+                "method": "POST",
+                "path": "/checkout/**",
+                "request": [
+                    {
+                        "action": "encrypt",
+                        "selections": [
+                            {
+                                "type": "json",
+                                "selector": "$.card.number"
+                            }
+                        ]
+                    }
+                ],
+                "response": []
+            }
+        ]
+    },
+    {
+        "id": "relay_02ABCDE",
+        "subdomain": "payments-api.relay.evervault.com",
+        "destinationDomain": "payments.internal.example.com",
+        "encryptEmptyStrings": false,
+        "routes": [
+            {
+                "method": null,
+                "path": "/**",
+                "request": [
+                    {
+                        "action": "encrypt",
+                        "selections": [
+                            {
+                                "type": "json",
+                                "selector": "$.ssn"
+                            },
+                            {
+                                "type": "json",
+                                "selector": "$.email"
+                            }
+                        ]
+                    }
+                ],
+                "response": [
+                    {
+                        "action": "decrypt",
+                        "selections": [
+                            {
+                                "type": "json",
+                                "selector": "$.ssn"
+                            },
+                            {
+                                "type": "json",
+                                "selector": "$.email"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+]

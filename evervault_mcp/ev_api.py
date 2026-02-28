@@ -76,7 +76,40 @@ class EvervaultClient:
             results.append(result)
         return results
 
-    # -- internal helpers -----------------------------------------------------
+    # -- relay endpoints ------------------------------------------------------
+
+    async def create_relay(
+        self,
+        destination_domain: str,
+        routes: list[dict[str, Any]],
+        encrypt_empty_strings: bool = False,
+    ) -> dict[str, Any]:
+        """POST /relays -- create a new Relay.
+
+        Tool params use snake_case; this method maps to API camelCase.
+        """
+        client = await self._get_client()
+        body = {
+            "destinationDomain": destination_domain,
+            "routes": routes,
+            "encryptEmptyStrings": encrypt_empty_strings,
+        }
+        log.info("creating relay for %s (%d routes)", destination_domain, len(routes))
+        return await self._request(client, "POST", "/relays", json=body)
+
+    async def list_relays(self) -> list[dict[str, Any]]:
+        """GET /relays -- list all relays for the current app.
+
+        The API returns { "data": [...] }; we extract the array.
+        """
+        client = await self._get_client()
+        log.info("listing relays")
+        resp = await self._request(client, "GET", "/relays")
+        # API wraps the list in a "data" key
+        if isinstance(resp, dict) and "data" in resp:
+            return resp["data"]
+        return resp
+
 
     async def _request(
         self,
