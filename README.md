@@ -1,8 +1,8 @@
 # Evervault Architect MCP
 
-**Architect, deploy, and audit Evervault security infrastructure — directly in your IDE.**
+**Architect, deploy, and audit Evervault security infrastructure – directly in your IDE.**
 
-An MCP server that gives your AI agent hands-on access to [Evervault](https://docs.evervault.com/). Encrypt data, create Relay proxies, run secure Functions, and analyze schemas for PII — all through natural-language conversation in VS Code.
+An MCP server that gives your AI agent hands-on access to [Evervault](https://docs.evervault.com/). Encrypt data, create Relay proxies, run secure Functions, and analyze schemas for PII – all through natural-language conversation in VS Code.
 
 Built for a **Founding Solutions Engineer** to demonstrate Evervault's value in live pre-sales demos.
 
@@ -16,12 +16,12 @@ You open VS Code, invoke `/evervault`, and have a conversation:
 > **Agent:** Scans the schema, highlights PII fields, recommends encryption types. Renders a color-coded sensitivity tree in the chat.
 
 > **You:** *"Encrypt this sample user payload."*
-> **Agent:** Calls the Evervault Encrypt API. Shows a before/after diff — plaintext → `ev:encrypted:...`
+> **Agent:** Calls the Evervault Encrypt API. Shows a before/after diff – plaintext → `ev:encrypted:...`
 
 > **You:** *"Set up a Relay to intercept card data before it hits our DB."*
 > **Agent:** Creates a Relay via the API. Shows a route map widget: source → Relay → destination.
 
-**Result:** In 5 minutes, you've materially improved your compliance posture — without leaving the IDE.
+**Result:** In 5 minutes, you've materially improved your compliance posture – without leaving the IDE.
 
 ---
 
@@ -121,8 +121,8 @@ Add to `.vscode/mcp.json`:
 
 ```
 IDE (VS Code)
-  ├── /evervault             (Skill — developer persona)
-  ├── /evervault-security    (Skill — security persona)
+  ├── /evervault             (Skill – developer persona)
+  ├── /evervault-security    (Skill – security persona)
   └── LLM routes intent
         ↓
   evervault_mcp/server.py    (FastMCP, stdio transport)
@@ -137,7 +137,7 @@ IDE (VS Code)
 
 **Transport:** stdio (local). Server runs as a child process of the IDE.
 
-**MCP Apps:** Each tool declares a `ui://` resource via FastMCP's `AppConfig`. The host (VS Code) fetches the HTML via `resources/read` and renders it inside the Chat window — interactive widgets served directly over the MCP protocol.
+**MCP Apps:** Each tool declares a `ui://` resource via FastMCP's `AppConfig`. The host (VS Code) fetches the HTML via `resources/read` and renders it inside the Chat window – interactive widgets served directly over the MCP protocol.
 
 ---
 
@@ -148,7 +148,7 @@ IDE (VS Code)
 Encrypts data via the [Evervault Encrypt API](https://docs.evervault.com/api#encrypt). Accepts any valid JSON value (object, array, string, number, boolean). Returns the same structure with values replaced by `ev:...` ciphertext.
 
 - **API:** `POST https://api.evervault.com/encrypt`
-- **Widget:** Side-by-side diff — plaintext input → encrypted output
+- **Widget:** Side-by-side diff – plaintext input → encrypted output
 
 ### `ev_inspect`
 
@@ -159,10 +159,10 @@ Retrieves metadata for encrypted values (encryption time, data type, role, finge
 
 ### `ev_relay_create`
 
-Creates an [Evervault Relay](https://docs.evervault.com/relay) — a network proxy that encrypts/decrypts data in transit.
+Creates an [Evervault Relay](https://docs.evervault.com/relay) – a network proxy that encrypts/decrypts data in transit.
 
 - **API:** `POST https://api.evervault.com/relays`
-- **Widget:** Visual route map — source → Relay → destination
+- **Widget:** Visual route map – source → Relay → destination
 
 ### `ev_relay_list`
 
@@ -173,7 +173,7 @@ Lists all configured Relays for the current app.
 
 ### `ev_function_run`
 
-Runs an [Evervault Function](https://docs.evervault.com/functions) — secure serverless code that auto-decrypts data at runtime.
+Runs an [Evervault Function](https://docs.evervault.com/functions) – secure serverless code that auto-decrypts data at runtime.
 
 - **API:** `POST https://api.evervault.com/functions/{function_name}/runs`
 - **Widget:** Execution flow diagram with timing
@@ -182,14 +182,14 @@ Runs an [Evervault Function](https://docs.evervault.com/functions) — secure se
 
 Analyzes a JSON payload or schema for PII/PCI fields. Recommends encryption types (Standard vs. Deterministic) based on field usage patterns.
 
-- **Implementation:** Local pattern matching — no API call. Recommendations for deterministic vs. standard encryption are advisory.
+- **Implementation:** Local pattern matching – no API call. Recommendations for deterministic vs. standard encryption are advisory.
 - **Widget:** Color-coded schema tree (🔴 PCI, 🟡 PII, 🟢 Safe)
 
 ### `ev_docs_query`
 
 Queries bundled Evervault documentation for contextual answers without leaving the IDE.
 
-- **Implementation:** Local — reads bundled `docs_context.md`
+- **Implementation:** Local – reads bundled `docs_context.md`
 - **Widget:** Formatted doc panel with links to official docs
 
 ---
@@ -218,11 +218,11 @@ Queries bundled Evervault documentation for contextual answers without leaving t
 
 `ev_function_run` → `ev_relay_create` → `ev_inspect`
 
-**Closer:** *"Evervault isn't a gatekeeper — it's an accelerator."*
+**Closer:** *"Evervault isn't a gatekeeper – it's an accelerator."*
 
 ### 4. "The Privacy-Preserving AI"
 
-> *CEO wants AI. Legal says no — can't send PII to external LLMs.*
+> *CEO wants AI. Legal says no – can't send PII to external LLMs.*
 
 `ev_schema_suggest` → `ev_encrypt` → `ev_relay_create` → `ev_function_run`
 
@@ -273,7 +273,7 @@ The following items were identified during QA review but deferred from v1 as ove
 
 ### 1. Operational NFRs (Correlation IDs, Backoff Matrices, Rate Limit UX)
 
-**Why:** Full observability and graceful degradation under sustained use — correlation IDs let you trace a single demo interaction across tool calls, API requests, and widget renders; backoff policies prevent rate-limit lockouts during rapid-fire demos.
+**Why:** Full observability and graceful degradation under sustained use – correlation IDs let you trace a single demo interaction across tool calls, API requests, and widget renders; backoff policies prevent rate-limit lockouts during rapid-fire demos.
 
 **Deferred because:** v1 already has a 5-second timeout budget and `auto-fallback` mode, which cover the realistic failure modes for a live demo. The additional observability infrastructure (structured logging, trace propagation) adds complexity without improving the demo experience for a single-SE use case.
 
@@ -281,7 +281,7 @@ The following items were identified during QA review but deferred from v1 as ove
 
 ### 2. Contract Tests Against API Mock
 
-**Why:** Catches API drift — if Evervault changes their response schema (e.g., adds a required field to `/relays`), contract tests fail before the demo does.
+**Why:** Catches API drift – if Evervault changes their response schema (e.g., adds a required field to `/relays`), contract tests fail before the demo does.
 
 **Deferred because** v1's fixture files already encode the expected response shapes, and `auto-fallback` mode masks API drift during demos. Contract tests add CI/CD overhead that isn't justified until the tool is maintained by more than one person.
 
@@ -289,7 +289,7 @@ The following items were identified during QA review but deferred from v1 as ove
 
 ### 3. Golden Tests for Widget Rendering
 
-**Why:** Visual regression safety — ensures widget HTML renders correctly after React/Vite upgrades or data model changes.
+**Why:** Visual regression safety – ensures widget HTML renders correctly after React/Vite upgrades or data model changes.
 
 **Deferred because** Widgets are self-contained HTML bundles built infrequently. Until the widget count grows or multiple contributors touch them, manual visual checks during development are sufficient.
 
@@ -299,7 +299,7 @@ The following items were identified during QA review but deferred from v1 as ove
 
 **Why:** Prevents the AI agent from making over-strong compliance claims (e.g., "you are now PCI compliant") or invoking tools in unexpected sequences during a demo.
 
-**Deferred because** The skill `.md` files (`SKILL.md`) will naturally define persona boundaries and tool invocation guidance at implementation time. Specifying prompt constraints in the PRD before the tools exist would be speculative — the right guardrails emerge from actual demo rehearsals.
+**Deferred because** The skill `.md` files (`SKILL.md`) will naturally define persona boundaries and tool invocation guidance at implementation time. Specifying prompt constraints in the PRD before the tools exist would be speculative – the right guardrails emerge from actual demo rehearsals.
 
 **How:** Add explicit `do_not_claim` lists to each skill's system prompt (e.g., "Never state that this constitutes legal compliance certification"). Add tool-sequence hints (e.g., "Prefer `ev_schema_suggest` before `ev_encrypt` for first-time schemas"). Test with adversarial prompts ("Am I PCI compliant now?") and validate the agent's response stays within bounds. This would change v1's open-ended agent behavior into a guardrailed conversation flow.
 
