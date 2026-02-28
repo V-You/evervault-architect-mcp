@@ -1,0 +1,16 @@
+[
+    {
+        "type": "string",
+        "category": "email",
+        "encryptedAt": 1709136000000,
+        "role": null,
+        "fingerprint": "WUlcOAgQcTN1GEUaoaKrLH1wL2PZrjsUS7byUGZyUEA"
+    },
+    {
+        "type": "string",
+        "category": null,
+        "encryptedAt": 1709136000000,
+        "role": null,
+        "fingerprint": "Xk2mPQ9rT4vBnYwE8fHjKl3sCdUaZi7oR6gN5xWqJMA"
+    }
+]

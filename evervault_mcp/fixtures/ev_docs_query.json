@@ -1,0 +1,17 @@
+{
+    "answer": "Evervault Relay is a configurable network proxy that can automatically encrypt or decrypt data in transit between your app and your own APIs, or any third-party APIs. Unlike Functions (which run your code in a secure serverless environment), Relay requires no code changes -- it operates at the network layer, intercepting and transforming data based on route configurations you define.",
+    "sources": [
+        {
+            "title": "Relay",
+            "url": "https://docs.evervault.com/relay"
+        },
+        {
+            "title": "Functions",
+            "url": "https://docs.evervault.com/functions"
+        },
+        {
+            "title": "Core concepts",
+            "url": "https://docs.evervault.com/core-concepts"
+        }
+    ]
+}

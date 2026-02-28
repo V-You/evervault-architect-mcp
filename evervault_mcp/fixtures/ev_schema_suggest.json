@@ -1,0 +1,35 @@
+{
+    "fields": [
+        {
+            "field_path": "email",
+            "sensitivity": "pii",
+            "suggested_encryption": "deterministic",
+            "reasoning": "'email' matches PII pattern -- deterministic recommended for lookup/indexing"
+        },
+        {
+            "field_path": "card_number",
+            "sensitivity": "pci",
+            "suggested_encryption": "standard",
+            "reasoning": "'card_number' matches PCI-scope pattern -- encrypt to keep cardholder data out of your infrastructure"
+        },
+        {
+            "field_path": "name",
+            "sensitivity": "pii",
+            "suggested_encryption": "standard",
+            "reasoning": "'name' matches PII pattern"
+        },
+        {
+            "field_path": "account_id",
+            "sensitivity": "safe",
+            "suggested_encryption": "none",
+            "reasoning": "'account_id' does not match known sensitive data patterns"
+        }
+    ],
+    "summary": {
+        "total_fields": 4,
+        "pci_fields": 1,
+        "pii_fields": 2,
+        "safe_fields": 1,
+        "recommendation": "Found 1 PCI-scope field(s) -- encrypt immediately to reduce compliance scope"
+    }
+}

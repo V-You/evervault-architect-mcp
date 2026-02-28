@@ -1,0 +1,28 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "evervault-mcp"
+version = "0.1.0"
+description = "Evervault Architect -- MCP server for architecting, deploying, and auditing Evervault security infrastructure"
+requires-python = ">=3.11"
+dependencies = [
+    "fastmcp>=2.0.0",
+    "httpx>=0.27.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.scripts]
+evervault-mcp = "evervault_mcp.server:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["evervault_mcp"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"evervault_mcp/docs_context.md" = "evervault_mcp/docs_context.md"
+"evervault_mcp/fixtures" = "evervault_mcp/fixtures"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
