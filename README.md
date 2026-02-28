@@ -243,7 +243,7 @@ Queries bundled Evervault documentation for contextual answers without leaving t
 │   ├── __main__.py                     # Entry point
 │   ├── server.py                       # MCP server (7 tools + 7 ui:// resources)
 │   ├── ev_api.py                       # Evervault API client
-│   ├── schema_analyzer.py             # PII/PCI pattern matching
+│   ├── schema_analyzer.py              # PII/PCI pattern matching
 │   └── docs_context.md                 # Bundled documentation
 ├── src/                                # Widget source (React + TypeScript)
 │   ├── encrypt-result/
