@@ -1,27 +1,24 @@
 # Evervault Architect MCP
 
-**Architect, deploy, and audit Evervault security infrastructure – directly in your IDE.**
+**Architect, deploy, and audit Evervault security infrastructure in your IDE**
 
-An MCP server that gives your AI agent hands-on access to [Evervault](https://docs.evervault.com/). Encrypt data, create Relay proxies, run secure Functions, and analyze schemas for PII – all through natural-language conversation in VS Code.
+This MCP server gives your AI agent access to [Evervault](https://docs.evervault.com/). Encrypt data, create Relay proxies, run secure Functions, and analyze schemas for PII.
 
-Built for a **Founding Solutions Engineer** to demonstrate Evervault's value in live pre-sales demos.
 
----
+## Overview
 
-## What it does
+In your IDE, use slash command `/evervault`:
 
-You open VS Code, invoke `/evervault`, and have a conversation:
+**``/evervault`` Analyze our user-service schema and tell me what's exposed**<br>
+**Agent:** Scans the schema, highlights PII fields, recommends encryption types. Renders a color-coded sensitivity tree in the chat.
 
-> **You:** *"Analyze our user-service schema and tell me what's exposed."*
-> **Agent:** Scans the schema, highlights PII fields, recommends encryption types. Renders a color-coded sensitivity tree in the chat.
+**``/evervault`` Encrypt this sample user payload** <br>
+**Agent:** Calls the Evervault Encrypt API. Shows a before/after diff – plaintext → ev:encrypted: ...
 
-> **You:** *"Encrypt this sample user payload."*
-> **Agent:** Calls the Evervault Encrypt API. Shows a before/after diff – plaintext → `ev:encrypted:...`
+**``/evervault`` Set up a Relay to intercept card data before it hits our DB**<br>
+**Agent:** Creates a Relay via the API. Shows a route map widget: source → Relay → destination.
 
-> **You:** *"Set up a Relay to intercept card data before it hits our DB."*
-> **Agent:** Creates a Relay via the API. Shows a route map widget: source → Relay → destination.
-
-**Result:** In 5 minutes, you've materially improved your compliance posture – without leaving the IDE.
+<span style="color: darkgreen;">**Result:** In 5 minutes, you've improved compliance – without leaving the IDE.</span>
 
 ---
 
@@ -35,13 +32,13 @@ You open VS Code, invoke `/evervault`, and have a conversation:
 - VS Code with GitHub Copilot or compatible MCP host
 - Evervault account with API credentials
 
-### From GitHub (recommended)
+### Install from GitHub (recommended)
 
 ```bash
 uvx --from git+https://github.com/V-You/evervault-architect-mcp evervault-mcp
 ```
 
-### Local development
+### Install for local development
 
 ```bash
 git clone https://github.com/V-You/evervault-architect-mcp.git
