@@ -8,13 +8,13 @@ This MCP server gives your AI agent access to [Evervault](https://docs.evervault
 
 | `/evervault` Analyze this schema: | Encrypt this <br>user record: | Show me the <br>token metadata for: |
 | :---: | :----: | :----: |
-| <kbd><img src="img/Screenshot_2026-03-01_095737.png" width="99px" /></kbd> | <kbd><img src="img/Screenshot_2026-02-22_201741.png" width="99px" /></kbd> | <kbd><img src="img/Screenshot_2026-02-28_205801.png" width="99px" /></kbd> | 
+| <kbd><img src="img/Screenshot_2026-03-01_095737.png" width="99px" /></kbd> | <kbd><img src="img/Screenshot_2026-03-01_115508.png" width="99px" /></kbd> | <kbd><img src="img/Screenshot_2026-03-01_115647.png" width="99px" /></kbd> | 
 
 ## Scenario 2: 
 
-| `/evervault` Set up a Relay <br>to intercept card data: | Look up in the docs<br>why / what ... | ... | ... |
-| :---: | :----: | :----: | :---: |
-| <kbd><img src="img/Screenshot_2026-02-22_195923.png" width="99px" /></kbd> | <kbd><img src="img/Screenshot_2026-02-22_201741.png" width="99px" /></kbd> | <kbd><img src="img/Screenshot_2026-02-28_205801.png" width="99px" /></kbd> | <kbd><img src="img/Screenshot_2026-02-22_203609.png" width="99px" /></kbd> |
+| `/evervault` Set up a Relay <br>to intercept card data: | Look up in the <br>documentation ... | ... |
+| :---: | :----: | :----: |
+| <kbd>...</kbd> | <kbd>...</kbd> | <kbd>...</kbd> |
 
 
 
@@ -182,14 +182,14 @@ from mcp.types import TextContent
 
 return ToolResult(
     content=[TextContent(type="text", text="Concise directive for the LLM")],
-    structured_content=summary_dict,
+    structured_content=widget_payload,
     meta={"ui": {"resourceUri": "ui://evervault-architect/<widget-name>.html"}},
 )
 ```
 
 The `meta` dict becomes `_meta` on the wire. VS Code needs `_meta.ui.resourceUri` in the **tool call response** to trigger widget rendering -- this is separate from (and in addition to) `AppConfig`, which only populates `_meta` in `tools/list`. Passing `meta={}` causes an empty `_meta: {}` on the wire, and the host silently skips rendering.
 
-**Anti-duplication:** The `structured_content` dict is visible to both the widget JS and the model. To avoid the model parroting widget data, pass a summary-only dict in `structured_content` (strip per-item details). The full result is stored in `_last_results` for the server-side HTML renderer. The `content` text includes explicit directives telling the model to complement -- not repeat -- what the widget shows.
+**Anti-duplication balance:** The `structured_content` dict is visible to both the widget JS and the model. There is a trade-off: summary-only payloads reduce model duplication, but can leave the widget without row data when `ui://` HTML is pre-fetched before tool execution. Prefer sending full widget hydration data (or at least all fields needed to rebuild the DOM) in `structured_content`, then use concise `content` instructions so the model summarizes instead of repeating tables.
 
 **Adding a new widget:**
 
@@ -213,7 +213,7 @@ The `meta` dict becomes `_meta` on the wire. VS Code needs `_meta.ui.resourceUri
 - The `@mcp.resource` handler is called on `resources/read` -- it must return valid HTML even before the tool has run (use a sensible empty-state default).
 - The host may cache/pre-fetch resource HTML before the tool runs, so `_last_results` can be empty at render time. The widget must handle this gracefully, then update via `ui/notifications/tool-result`.
 - Python f-strings conflict with JS unicode escapes (`\u{1F534}`). Use HTML entities (`&#x1F534;`) in innerHTML instead.
-- `structured_content` is visible to both widget and model. Strip verbose data to prevent the model from parroting the widget.
+- `structured_content` is shared by widget and model. If over-trimmed, widget rows may not hydrate after `ui/notifications/tool-result`; if full, keep `content` directives strict to avoid duplicate narration.
 
 ---
 

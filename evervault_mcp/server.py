@@ -119,14 +119,11 @@ async def ev_encrypt(
         "- Next steps (e.g. store tokens, set up a Relay, inspect tokens)"
     )
 
-    summary_only = {
-        "summary": {"encrypted_count": enc_count, "unchanged_count": unc_count, "total": total},
-        "_source": full["_source"],
-    }
-
     return ToolResult(
         content=[TextContent(type="text", text=text)],
-        structured_content=summary_only,
+        # send full payload so widgets can render details even when the
+        # ui:// resource was prefetched before tool execution
+        structured_content=full,
         meta={"ui": {"resourceUri": "ui://evervault-architect/encrypt-result.html"}},
     )
 
@@ -178,18 +175,11 @@ async def ev_inspect(tokens: list[str]) -> ToolResult:
         "- Suggested next steps"
     )
 
-    summary_only = {
-        "summary": {
-            "token_count": len(results),
-            "categories": categories,
-            "has_roles": has_roles,
-        },
-        "_source": full["_source"],
-    }
-
     return ToolResult(
         content=[TextContent(type="text", text=text)],
-        structured_content=summary_only,
+        # send full payload so widgets can render details even when the
+        # ui:// resource was prefetched before tool execution
+        structured_content=full,
         meta={"ui": {"resourceUri": "ui://evervault-architect/inspect-result.html"}},
     )
 
@@ -230,12 +220,11 @@ def ev_schema_suggest(schema: dict[str, Any]) -> ToolResult:
         "- Suggested next steps (e.g. encrypt sample values, set up a Relay)"
     )
 
-    # only expose summary to the model; per-field details stay in the widget
-    summary_only = {"summary": summary, "_source": result.get("_source", "local")}
-
     return ToolResult(
         content=[TextContent(type="text", text=text)],
-        structured_content=summary_only,
+        # send full payload so widgets can render details even when the
+        # ui:// resource was prefetched before tool execution
+        structured_content=result,
         meta={"ui": {"resourceUri": "ui://evervault-architect/schema-analysis.html"}},
     )
 
