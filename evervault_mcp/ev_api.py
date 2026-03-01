@@ -110,6 +110,19 @@ class EvervaultClient:
             return resp["data"]
         return resp
 
+    # -- function endpoints ---------------------------------------------------
+
+    async def run_function(
+        self,
+        function_name: str,
+        payload: dict[str, Any],
+    ) -> dict[str, Any]:
+        """POST /functions/{function_name}/runs -- run a Function."""
+        client = await self._get_client()
+        log.info("running function '%s'", function_name)
+        return await self._request(
+            client, "POST", f"/functions/{function_name}/runs", json=payload
+        )
 
     async def _request(
         self,

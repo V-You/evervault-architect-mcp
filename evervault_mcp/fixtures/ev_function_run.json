@@ -1,0 +1,12 @@
+{
+    "function_name": "process-payment",
+    "status": "success",
+    "result": {
+        "transaction_id": "txn_01HQX789",
+        "amount": 99.99,
+        "currency": "USD",
+        "status": "approved",
+        "message": "Payment processed successfully"
+    },
+    "execution_time_ms": 342
+}

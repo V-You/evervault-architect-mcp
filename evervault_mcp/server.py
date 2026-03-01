@@ -1,12 +1,13 @@
 """Evervault Architect MCP server.
 
-FastMCP server with 6 tools (Phase 1 + 2):
+FastMCP server with 7 tools (Phase 1-3):
 - ev_encrypt: encrypt data via Evervault API
 - ev_inspect: inspect encrypted tokens for metadata
 - ev_schema_suggest: analyze schemas for PII/PCI fields
 - ev_docs_query: query bundled Evervault documentation
 - ev_relay_create: create an Evervault Relay
 - ev_relay_list: list all Relays for the current app
+- ev_function_run: run an Evervault Function
 """
 
 from __future__ import annotations
@@ -164,6 +165,29 @@ async def ev_relay_list() -> dict[str, Any]:
     client = _get_client()
     relays = await client.list_relays()
     return {"relays": relays, "count": len(relays)}
+
+
+@mcp.tool()
+@with_fallback("ev_function_run")
+async def ev_function_run(
+    function_name: str,
+    payload: dict[str, Any],
+) -> dict[str, Any]:
+    """Run an Evervault Function -- secure serverless code that auto-decrypts data.
+
+    Encrypted values in the payload are automatically decrypted inside the
+    function's secure environment. Your infrastructure never sees plaintext.
+
+    Args:
+        function_name: name of the deployed function to run.
+        payload: JSON payload to pass to the function (can include ev:... tokens).
+    """
+    client = _get_client()
+    result = await client.run_function(
+        function_name=function_name,
+        payload=payload,
+    )
+    return {"function_result": result}
 
 
 # -- entry point --------------------------------------------------------------
