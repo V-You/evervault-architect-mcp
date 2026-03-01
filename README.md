@@ -349,6 +349,11 @@ Queries bundled Evervault documentation for contextual answers without leaving t
 
 ## Future Improvements (Deferred from QA-01)
 
+<details>
+  <summary>Click to expand</summary>
+
+  ***Remove, unless planned***
+
 The following items were identified during QA review but deferred from v1 as over-engineering for a demo tool at this stage. Each would meaningfully harden the server for production-grade repeatability.
 
 ### 1. Operational NFRs (Correlation IDs, Backoff Matrices, Rate Limit UX)
@@ -383,4 +388,8 @@ The following items were identified during QA review but deferred from v1 as ove
 
 **How:** Add explicit `do_not_claim` lists to each skill's system prompt (e.g., "Never state that this constitutes legal compliance certification"). Add tool-sequence hints (e.g., "Prefer `ev_schema_suggest` before `ev_encrypt` for first-time schemas"). Test with adversarial prompts ("Am I PCI compliant now?") and validate the agent's response stays within bounds. This would change v1's open-ended agent behavior into a guardrailed conversation flow.
 
----
+</details>
+
+## Troubleshooting
+
+...
