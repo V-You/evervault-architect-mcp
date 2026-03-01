@@ -36,11 +36,15 @@ def redact(text: str) -> str:
 
 def setup_logging(level: int = logging.INFO) -> None:
     """Configure root logger with redaction filter."""
-    handler = logging.StreamHandler()
+    import sys
+    handler = logging.StreamHandler(sys.stderr)
     handler.setFormatter(
         logging.Formatter("%(asctime)s %(name)s %(levelname)s %(message)s")
     )
     handler.addFilter(RedactingFilter())
+
+    # Suppress FastMCP's Rich-formatted internal logger (causes line wrapping in VS Code)
+    logging.getLogger("fastmcp").setLevel(logging.WARNING)
 
     root = logging.getLogger("evervault_mcp")
     root.setLevel(level)

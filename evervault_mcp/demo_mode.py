@@ -72,7 +72,10 @@ def with_fallback(tool_name: str):
 
             try:
                 result = await fn(*args, **kwargs)
-                result["_source"] = "live"
+                if isinstance(result, list):
+                    result = {"data": result, "_source": "live"}
+                else:
+                    result["_source"] = "live"
                 return result
             except (EvervaultAPIError, Exception) as exc:
                 if mode == DemoMode.LIVE:

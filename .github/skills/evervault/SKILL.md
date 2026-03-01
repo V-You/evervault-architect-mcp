@@ -32,6 +32,29 @@ Query bundled Evervault documentation. Use when the developer asks
 how Evervault works, what the difference between Relay and Functions
 is, or any product question.
 
+## Important: always use the MCP tools
+
+**Always call the MCP tools directly** (e.g. `ev_encrypt`,
+`ev_schema_suggest`) -- never bypass them by running Python scripts,
+importing server modules in a terminal, or calling the Evervault API
+manually. The MCP server renders rich inline widgets (MCP Apps) in the
+chat panel. Bypassing the tools means the user loses the visual UI,
+which is the core demo experience.
+
+## Widget and text -- avoid duplication
+
+Tools with MCP Apps widgets (like `ev_schema_suggest`) render rich UI
+inline. The widget already shows the full data (field table, stats,
+badges). Your text response should **complement, not repeat** it:
+
+- Do NOT repeat the field list, sensitivity labels, or encryption
+  types that the widget already shows
+- DO provide actionable advice: what to encrypt first, why
+  deterministic vs standard matters for the user's use case, next
+  steps (e.g. "want me to encrypt sample values?")
+- A brief summary sentence ("5 of 7 fields need encryption") is
+  fine -- a full markdown table duplicating the widget is not
+
 ## Guidelines
 
 - Start with `ev_schema_suggest` when the developer shares a schema

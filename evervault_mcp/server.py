@@ -18,11 +18,15 @@ from typing import Any
 
 from dotenv import load_dotenv
 from fastmcp import FastMCP
+from fastmcp.server.apps import AppConfig
+from fastmcp.tools.tool import ToolResult
+from mcp.types import TextContent
 
 from evervault_mcp.demo_mode import with_fallback
 from evervault_mcp.ev_api import EvervaultClient
 from evervault_mcp.redact import setup_logging
 from evervault_mcp.schema_analyzer import analyze_schema
+from evervault_mcp.widgets import render_schema_analysis
 
 log = logging.getLogger("evervault_mcp.server")
 
@@ -38,6 +42,9 @@ mcp = FastMCP(
 
 # lazily initialized on first tool call
 _client: EvervaultClient | None = None
+
+# stores latest result for each tool's ui:// resource
+_last_results: dict[str, dict[str, Any]] = {}
 
 
 def _get_client() -> EvervaultClient:
@@ -86,8 +93,10 @@ async def ev_inspect(tokens: list[str]) -> dict[str, Any]:
     return {"inspections": results}
 
 
-@mcp.tool()
-async def ev_schema_suggest(schema: dict[str, Any]) -> dict[str, Any]:
+@mcp.tool(
+    app=AppConfig(resource_uri="ui://evervault-architect/schema-analysis.html"),
+)
+def ev_schema_suggest(schema: dict[str, Any]) -> ToolResult:
     """Analyze a JSON schema or payload for PII/PCI fields.
 
     Pattern-matches field names against known sensitive data patterns and
@@ -100,7 +109,45 @@ async def ev_schema_suggest(schema: dict[str, Any]) -> dict[str, Any]:
     """
     result = analyze_schema(schema)
     result["_source"] = "local"
-    return result
+    _last_results["schema_analysis"] = result
+
+    summary = result.get("summary", {})
+    pci = summary.get("pci_fields", 0)
+    pii = summary.get("pii_fields", 0)
+    rec = summary.get("recommendation", "")
+
+    log.info(f"ev_schema_suggest called! Found PCI={pci}, PII={pii}. Meta should include AppConfig resource_uri=ui://evervault-architect/schema-analysis.html")
+
+    text = (
+        f"Found {pci} PCI and {pii} PII fields out of {summary.get('total_fields', 0)} total. "
+        f"{rec}\n\n"
+        "The inline widget above shows the full field-by-field table with "
+        "sensitivity levels, encryption types, and reasoning. Do NOT repeat "
+        "that data. Instead give a brief summary sentence and focus on:\n"
+        "- Which fields to encrypt first and why\n"
+        "- When deterministic vs standard encryption matters\n"
+        "- Suggested next steps (e.g. encrypt sample values, set up a Relay)"
+    )
+
+    # only expose summary to the model; per-field details stay in the widget
+    summary_only = {"summary": summary, "_source": result.get("_source", "local")}
+
+    return ToolResult(
+        content=[TextContent(type="text", text=text)],
+        structured_content=summary_only,
+        meta={"ui": {"resourceUri": "ui://evervault-architect/schema-analysis.html"}},
+    )
+
+
+@mcp.resource("ui://evervault-architect/schema-analysis.html")
+def schema_analysis_widget() -> str:
+    """Interactive schema analysis widget."""
+    data = _last_results.get("schema_analysis", {
+        "fields": [],
+        "summary": {"total_fields": 0, "pci_fields": 0, "pii_fields": 0, "safe_fields": 0, "recommendation": "No analysis run yet."},
+        "_source": "local",
+    })
+    return render_schema_analysis(data)
 
 
 @mcp.tool()

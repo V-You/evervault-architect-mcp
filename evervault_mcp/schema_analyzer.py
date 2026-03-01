@@ -23,12 +23,17 @@ _PCI_PATTERNS: list[re.Pattern] = [
         r"credit.?card",
         r"debit.?card",
         r"^cc.?num",
-        r"^cvv",
-        r"^cvc",
-        r"^csv",
+        r"cvv",
+        r"cvc",
+        r"csv",
         r"card.?exp",
         r"expir",
         r"card.?holder",
+        r"^holder",
+        r"card.?bin",
+        r"^bin$",
+        r"last.?4",
+        r"last.?four",
     ]
 ]
 
