@@ -6,7 +6,7 @@ This MCP server gives your AI agent access to [Evervault](https://docs.evervault
 
 ## Scenario 1: 
 
-| `/evervault` Analyze this schema: | Encrypt this <br>user record: | Show me the <br>token metadata for: |
+| `/evervault` Analyze <br>this schema: | Encrypt this <br>user record: | Show me the <br>token metadata for: |
 | :---: | :----: | :----: |
 | <kbd><img src="img/Screenshot_2026-03-01_095737.png" width="99px" /></kbd> | <kbd><img src="img/Screenshot_2026-03-01_115508.png" width="99px" /></kbd> | <kbd><img src="img/Screenshot_2026-03-01_115647.png" width="99px" /></kbd> | 
 
