@@ -69,7 +69,7 @@ EV_API_KEY=your_api_key_here
 EV_DEMO_MODE=auto-fallback    # live | mock | auto-fallback (default)
 ```
 
-> **Note:** The `.env` file is loaded by the Python server at startup via `python-dotenv`. The `${env:...}` syntax in `mcp.json` reads from the *shell* environment, not `.env`. For local testing, either `export` the vars in your shell or set literal values in `mcp.json`.
+> **Note:** The `.env` file is loaded by the Python server at startup via `python-dotenv`. No need to duplicate credentials in `mcp.json` -- the server reads them from `.env` automatically.
 
 ### VS Code MCP configuration
 
@@ -80,11 +80,7 @@ Add to `.vscode/mcp.json`:
   "servers": {
     "evervault-architect": {
       "command": "uvx",
-      "args": ["--from", "git+https://github.com/V-You/evervault-architect-mcp", "evervault-mcp"],
-      "env": {
-        "EV_APP_ID": "${env:EV_APP_ID}",
-        "EV_API_KEY": "${env:EV_API_KEY}"
-      }
+      "args": ["--from", "git+https://github.com/V-You/evervault-architect-mcp", "evervault-mcp"]
     }
   }
 }
@@ -150,6 +146,12 @@ IDE (VS Code)
 
 ### MCP Apps implementation
 
+
+<details>
+  <summary>Click to expand</summary>
+
+(Remove, once all widgets work)
+
 Three pieces must be wired together for a widget to render inline:
 
 **1. `ui://` resource** -- serves the self-contained HTML.
@@ -214,6 +216,8 @@ The `meta` dict becomes `_meta` on the wire. VS Code needs `_meta.ui.resourceUri
 - Python f-strings conflict with JS unicode escapes (`\u{1F534}`). Use HTML entities (`&#x1F534;`) in innerHTML instead.
 - `structured_content` is shared by widget and model. If over-trimmed, widget rows may not hydrate after `ui/notifications/tool-result`; if full, keep `content` directives strict to avoid duplicate narration.
 
+</details>
+
 ---
 
 ## Tools
@@ -270,6 +274,8 @@ Queries bundled Evervault documentation for contextual answers without leaving t
 ---
 
 ## Demo Narratives
+
+***All 6 narratives: see NOTES.md***
 
 ### 1. "The Zero-Day Implementation"
 
