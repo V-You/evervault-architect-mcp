@@ -273,7 +273,7 @@ Queries bundled Evervault documentation for contextual answers without leaving t
 
 ---
 
-## Demo Narratives
+## Demo narratives
 
 ***All 6 narratives: see NOTES.md***
 
@@ -347,7 +347,7 @@ Queries bundled Evervault documentation for contextual answers without leaving t
 
 ---
 
-## Future Improvements (Deferred from QA-01)
+## Future improvements
 
 <details>
   <summary>Click to expand</summary>
