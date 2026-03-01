@@ -72,10 +72,12 @@ def with_fallback(tool_name: str):
 
             try:
                 result = await fn(*args, **kwargs)
-                if isinstance(result, list):
-                    result = {"data": result, "_source": "live"}
-                else:
+                if isinstance(result, dict):
                     result["_source"] = "live"
+                elif isinstance(result, list):
+                    result = {"data": result, "_source": "live"}
+                # non-dict/list returns (e.g. ToolResult) pass through unchanged;
+                # the tool function is responsible for setting _source.
                 return result
             except (EvervaultAPIError, Exception) as exc:
                 if mode == DemoMode.LIVE:

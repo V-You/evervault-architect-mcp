@@ -2,17 +2,17 @@
 
 **Architect, deploy, and audit Evervault security infrastructure in your IDE**
 
-This MCP server gives your AI agent access to [Evervault](https://docs.evervault.com/). Encrypt data, create Relay proxies, run secure Functions, and analyze schemas for PII.
+This MCP server gives your AI agent access to [Evervault](https://docs.evervault.com/). Encrypt data, create Relay proxies, run secure Functions, and analyze schemas for PII implications or PCI compliance.
 
 ## Scenario 1: 
 
-| `/evervault` Analyze this schema: | ... | ... | ... |
-| :---: | :----: | :----: | :---: |
-| <kbd><img src="img/Screenshot_2026-03-01_095737.png" width="99px" /></kbd> | <kbd><img src="img/Screenshot_2026-02-22_201741.png" width="99px" /></kbd> | <kbd><img src="img/Screenshot_2026-02-28_205801.png" width="99px" /></kbd> | <kbd><img src="img/Screenshot_2026-02-22_203609.png" width="99px" /></kbd> |
+| `/evervault` Analyze this schema: | Encrypt this <br>user record: | Show me the <br>token metadata for: |
+| :---: | :----: | :----: |
+| <kbd><img src="img/Screenshot_2026-03-01_095737.png" width="99px" /></kbd> | <kbd><img src="img/Screenshot_2026-02-22_201741.png" width="99px" /></kbd> | <kbd><img src="img/Screenshot_2026-02-28_205801.png" width="99px" /></kbd> | 
 
 ## Scenario 2: 
 
-| `/evervault` Set up a Relay <br>to intercept card data: | ... | ... | ... |
+| `/evervault` Set up a Relay <br>to intercept card data: | Look up in the docs<br>why / what ... | ... | ... |
 | :---: | :----: | :----: | :---: |
 | <kbd><img src="img/Screenshot_2026-02-22_195923.png" width="99px" /></kbd> | <kbd><img src="img/Screenshot_2026-02-22_201741.png" width="99px" /></kbd> | <kbd><img src="img/Screenshot_2026-02-28_205801.png" width="99px" /></kbd> | <kbd><img src="img/Screenshot_2026-02-22_203609.png" width="99px" /></kbd> |
 
@@ -156,7 +156,7 @@ Three pieces must be wired together for a widget to render inline:
 **1. `ui://` resource** -- serves the self-contained HTML.
 
 ```python
-@mcp.resource("ui://schema-analysis")
+@mcp.resource("ui://evervault-architect/schema-analysis.html")
 def schema_analysis_widget() -> str:
     """Interactive schema analysis widget."""
     return render_schema_analysis(_last_results.get("schema_analysis", {}))
@@ -168,7 +168,7 @@ The `ui://` URI scheme auto-sets the MIME type to `text/html;profile=mcp-app`.
 
 ```python
 @mcp.tool(
-    app=AppConfig(resource_uri="ui://schema-analysis"),
+    app=AppConfig(resource_uri="ui://evervault-architect/schema-analysis.html"),
 )
 ```
 
@@ -182,33 +182,38 @@ from mcp.types import TextContent
 
 return ToolResult(
     content=[TextContent(type="text", text="Concise directive for the LLM")],
-    structured_content=result_dict,
-    meta={"ui": {"resourceUri": "ui://evervault/<widget-name>.html"}},
+    structured_content=summary_dict,
+    meta={"ui": {"resourceUri": "ui://evervault-architect/<widget-name>.html"}},
 )
 ```
 
-The `meta` dict becomes `_meta` on the wire. VS Code needs `_meta.ui.resourceUri` in the **tool call response** to trigger widget rendering -- this is separate from (and in addition to) `AppConfig`, which only populates `_meta` in `tools/list`. Passing `meta={}` causes an empty `_meta: {}` on the wire, and the host silently skips rendering. The `structured_content` dict is what the widget's HTML/JS reads to populate itself. The `content` text is what the LLM sees and uses to frame its response.
+The `meta` dict becomes `_meta` on the wire. VS Code needs `_meta.ui.resourceUri` in the **tool call response** to trigger widget rendering -- this is separate from (and in addition to) `AppConfig`, which only populates `_meta` in `tools/list`. Passing `meta={}` causes an empty `_meta: {}` on the wire, and the host silently skips rendering.
+
+**Anti-duplication:** The `structured_content` dict is visible to both the widget JS and the model. To avoid the model parroting widget data, pass a summary-only dict in `structured_content` (strip per-item details). The full result is stored in `_last_results` for the server-side HTML renderer. The `content` text includes explicit directives telling the model to complement -- not repeat -- what the widget shows.
 
 **Adding a new widget:**
 
 1. Write a `render_*()` function in `widgets.py` that returns a self-contained HTML string (use VS Code CSS variables like `--vscode-foreground` for theme integration)
-2. The HTML **must** include a `<script>` that performs the MCP Apps `initialize` handshake via `postMessage` -- without it, the host won't display the iframe. The handshake methods use the `ui/` prefix and kebab-case notification names:
-   - Send request: `"ui/initialize"` with `protocolVersion: "2025-06-18"`
+2. The HTML **must** include a `<script>` that performs the MCP Apps handshake via `postMessage` -- without it, the host won't display the iframe:
+   - Send request: `"ui/initialize"` with `protocolVersion: "2026-01-26"`, `appCapabilities: {}`, `appInfo: { name, version }`
    - Send notification: `"ui/notifications/initialized"`
    - Listen for: `"ui/notifications/tool-result"` (receives `structuredContent`), `"ui/notifications/host-context-changed"` (theme vars)
-   - **Do not** use unprefixed `"initialize"` or camelCase `"hostContextChanged"` -- these will silently fail. See `widgets.py` for the minimal template
-3. Use the URI convention `ui://evervault/<widget-name>.html`
-4. Register a `@mcp.resource("ui://evervault/<widget-name>.html")` that calls the renderer
-5. Add `app=AppConfig(resource_uri="ui://evervault/<widget-name>.html")` to the `@mcp.tool()` decorator
-6. Return `ToolResult(content=..., structured_content=..., meta={"ui": {"resourceUri": "ui://evervault/<widget-name>.html"}})` from the tool
-7. Optionally store the result in `_last_results` so the resource can serve it on subsequent reads
+   - **Do not** use unprefixed `"initialize"` or camelCase `"hostContextChanged"` -- these silently fail. See `widgets.py` for the minimal template
+3. Use the URI convention `ui://evervault-architect/<widget-name>.html`
+4. Register a `@mcp.resource("ui://evervault-architect/<widget-name>.html")` that calls the renderer
+5. Add `app=AppConfig(resource_uri="ui://evervault-architect/<widget-name>.html")` to the `@mcp.tool()` decorator
+6. Return `ToolResult(content=..., structured_content=..., meta={"ui": {"resourceUri": "ui://evervault-architect/<widget-name>.html"}})` from the tool
+7. Store the full result in `_last_results` so the resource handler can serve it on subsequent reads
 
-**Gotchas discovered during the first widget (2026-02-28):**
+**Gotchas (updated 2026-03-01):**
 
-- `meta={}` produces `_meta: {}` on the wire -- VS Code ignores it. You must explicitly pass the `ui.resourceUri` in `meta` for each tool call response, not just in `AppConfig`.
+- `meta={}` produces `_meta: {}` on the wire -- VS Code ignores it. You must explicitly pass `ui.resourceUri` in `meta` for each tool call response, not just in `AppConfig`.
 - Handshake method names are `ui/`-prefixed and kebab-case (`ui/initialize`, `ui/notifications/host-context-changed`). Unprefixed or camelCase variants fail silently.
-- Protocol version must be `"2025-06-18"` (the MCP Apps spec date, not the blog date).
+- Protocol version is `"2026-01-26"`. Handshake params are `appCapabilities` and `appInfo` (not `capabilities` / `clientInfo`).
 - The `@mcp.resource` handler is called on `resources/read` -- it must return valid HTML even before the tool has run (use a sensible empty-state default).
+- The host may cache/pre-fetch resource HTML before the tool runs, so `_last_results` can be empty at render time. The widget must handle this gracefully, then update via `ui/notifications/tool-result`.
+- Python f-strings conflict with JS unicode escapes (`\u{1F534}`). Use HTML entities (`&#x1F534;`) in innerHTML instead.
+- `structured_content` is visible to both widget and model. Strip verbose data to prevent the model from parroting the widget.
 
 ---
 
@@ -309,28 +314,27 @@ Queries bundled Evervault documentation for contextual answers without leaving t
 
 ---
 
-## Project Structure
+## Project structure
 
 ```
 ├── evervault_mcp/                      # Python package
 │   ├── __init__.py
 │   ├── __main__.py                     # Entry point
-│   ├── server.py                       # MCP server (7 tools + 7 ui:// resources)
+│   ├── server.py                       # MCP server (7 tools + ui:// resources)
+│   ├── widgets.py                      # HTML widget renderers (MCP Apps)
 │   ├── ev_api.py                       # Evervault API client
 │   ├── schema_analyzer.py              # PII/PCI pattern matching
-│   └── docs_context.md                 # Bundled documentation
-├── src/                                # Widget source (React + TypeScript)
-│   ├── encrypt-result/
-│   ├── inspect-result/
-│   ├── relay-config/
-│   ├── relay-dashboard/
-│   ├── function-run/
-│   ├── schema-analysis/
-│   └── docs-panel/
-├── assets/                             # Built widgets (self-contained HTML)
+│   ├── demo_mode.py                    # Live/mock/auto-fallback decorator
+│   ├── redact.py                       # Log redaction for ev:... tokens
+│   ├── errors.py                       # Custom exceptions
+│   ├── docs_context.md                 # Bundled documentation
+│   └── fixtures/                       # Demo fallback fixtures (per tool)
+├── .github/
+│   ├── copilot-instructions.md
+│   └── skills/
+│       ├── evervault/SKILL.md          # Developer persona skill
+│       └── evervault-security/SKILL.md # Security persona skill
 ├── pyproject.toml
-├── package.json
-├── vite.config.mts
 └── .vscode/mcp.json
 ```
 

@@ -22,11 +22,16 @@ from fastmcp.server.apps import AppConfig
 from fastmcp.tools.tool import ToolResult
 from mcp.types import TextContent
 
-from evervault_mcp.demo_mode import with_fallback
+from evervault_mcp.demo_mode import DemoMode, get_demo_mode, load_fixture, with_fallback
+from evervault_mcp.errors import EvervaultAPIError
 from evervault_mcp.ev_api import EvervaultClient
 from evervault_mcp.redact import setup_logging
 from evervault_mcp.schema_analyzer import analyze_schema
-from evervault_mcp.widgets import render_schema_analysis
+from evervault_mcp.widgets import (
+    render_encrypt_result,
+    render_inspect_result,
+    render_schema_analysis,
+)
 
 log = logging.getLogger("evervault_mcp.server")
 
@@ -57,12 +62,13 @@ def _get_client() -> EvervaultClient:
 # -- tools --------------------------------------------------------------------
 
 
-@mcp.tool()
-@with_fallback("ev_encrypt")
+@mcp.tool(
+    app=AppConfig(resource_uri="ui://evervault-architect/encrypt-result.html"),
+)
 async def ev_encrypt(
     payload: dict | list | str | int | bool,
     role: str | None = None,
-) -> dict[str, Any]:
+) -> ToolResult:
     """Encrypt data via the Evervault API.
 
     Accepts any valid JSON value (object, array, string, number, boolean).
@@ -72,14 +78,63 @@ async def ev_encrypt(
         payload: the data to encrypt. Can be any valid JSON value.
         role: optional data role for deterministic encryption (e.g. "email").
     """
-    client = _get_client()
-    result = await client.encrypt(payload)
-    return {"encrypted": result}
+    mode = get_demo_mode()
+    source = "live"
+
+    if mode == DemoMode.MOCK:
+        result = load_fixture("ev_encrypt")
+        result.pop("_source", None)
+        source = "mock"
+    else:
+        try:
+            client = _get_client()
+            result = await client.encrypt(payload)
+        except (EvervaultAPIError, Exception) as exc:
+            if mode == DemoMode.LIVE:
+                raise
+            log.warning("[ev_encrypt] live call failed (%s), falling back to fixture", str(exc)[:100])
+            result = load_fixture("ev_encrypt")
+            result.pop("_source", None)
+            source = "mock"
+
+    full = {"encrypted": result, "_source": source}
+    _last_results["encrypt"] = full
+
+    # count encrypted vs unchanged fields
+    enc_count = 0
+    unc_count = 0
+    if isinstance(result, dict):
+        for v in result.values():
+            if str(v).startswith("ev:"):
+                enc_count += 1
+            else:
+                unc_count += 1
+    total = enc_count + unc_count
+
+    text = (
+        f"Encrypted {enc_count} of {total} fields. "
+        "The widget above shows each field's status and token. "
+        "Do NOT repeat the field table. Instead summarize briefly and focus on:\n"
+        "- Which fields were encrypted and why others were left unchanged\n"
+        "- Next steps (e.g. store tokens, set up a Relay, inspect tokens)"
+    )
+
+    summary_only = {
+        "summary": {"encrypted_count": enc_count, "unchanged_count": unc_count, "total": total},
+        "_source": full["_source"],
+    }
+
+    return ToolResult(
+        content=[TextContent(type="text", text=text)],
+        structured_content=summary_only,
+        meta={"ui": {"resourceUri": "ui://evervault-architect/encrypt-result.html"}},
+    )
 
 
-@mcp.tool()
-@with_fallback("ev_inspect")
-async def ev_inspect(tokens: list[str]) -> dict[str, Any]:
+@mcp.tool(
+    app=AppConfig(resource_uri="ui://evervault-architect/inspect-result.html"),
+)
+async def ev_inspect(tokens: list[str]) -> ToolResult:
     """Inspect encrypted tokens to retrieve metadata without decrypting.
 
     The Evervault API accepts a single token per request. This tool iterates
@@ -88,9 +143,55 @@ async def ev_inspect(tokens: list[str]) -> dict[str, Any]:
     Args:
         tokens: list of ev:... ciphertext strings to inspect.
     """
-    client = _get_client()
-    results = await client.inspect_many(tokens)
-    return {"inspections": results}
+    mode = get_demo_mode()
+    source = "live"
+
+    if mode == DemoMode.MOCK:
+        fixture = load_fixture("ev_inspect")
+        results = fixture.get("data", fixture.get("inspections", []))
+        source = "mock"
+    else:
+        try:
+            client = _get_client()
+            results = await client.inspect_many(tokens)
+        except (EvervaultAPIError, Exception) as exc:
+            if mode == DemoMode.LIVE:
+                raise
+            log.warning("[ev_inspect] live call failed (%s), falling back to fixture", str(exc)[:100])
+            fixture = load_fixture("ev_inspect")
+            results = fixture.get("data", fixture.get("inspections", []))
+            source = "mock"
+
+    full = {"inspections": results, "_source": source}
+    _last_results["inspect"] = full
+
+    # collect stats for model
+    categories = list({r.get("category") for r in results if r.get("category")})
+    has_roles = any(r.get("role") for r in results)
+
+    text = (
+        f"Inspected {len(results)} tokens. "
+        "The widget above shows type, category, role, timestamp, and fingerprint "
+        "for each token. Do NOT repeat that table. Instead focus on:\n"
+        "- Security observations (missing categories, no roles applied)\n"
+        "- Whether deterministic encryption roles should be used\n"
+        "- Suggested next steps"
+    )
+
+    summary_only = {
+        "summary": {
+            "token_count": len(results),
+            "categories": categories,
+            "has_roles": has_roles,
+        },
+        "_source": full["_source"],
+    }
+
+    return ToolResult(
+        content=[TextContent(type="text", text=text)],
+        structured_content=summary_only,
+        meta={"ui": {"resourceUri": "ui://evervault-architect/inspect-result.html"}},
+    )
 
 
 @mcp.tool(
@@ -148,6 +249,26 @@ def schema_analysis_widget() -> str:
         "_source": "local",
     })
     return render_schema_analysis(data)
+
+
+@mcp.resource("ui://evervault-architect/encrypt-result.html")
+def encrypt_result_widget() -> str:
+    """Interactive encryption result widget."""
+    data = _last_results.get("encrypt", {
+        "encrypted": {},
+        "_source": "local",
+    })
+    return render_encrypt_result(data)
+
+
+@mcp.resource("ui://evervault-architect/inspect-result.html")
+def inspect_result_widget() -> str:
+    """Interactive token inspection widget."""
+    data = _last_results.get("inspect", {
+        "inspections": [],
+        "_source": "local",
+    })
+    return render_inspect_result(data)
 
 
 @mcp.tool()
