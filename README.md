@@ -31,7 +31,6 @@ In your IDE, use slash command `/evervault`:
 **``/evervault`` Set up a Relay to intercept card data before it hits our DB**<br>
 **Agent:** Creates a Relay via the API. Shows a route map widget: source → Relay → destination.
 
-<span style="color: darkgreen;">**Result:** In 5 minutes, you've improved compliance – without leaving the IDE.</span>
 
 ---
 
