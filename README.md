@@ -344,10 +344,13 @@ Queries bundled Evervault documentation for contextual answers without leaving t
 ```
 
 
+## Troubleshooting
+
+...
 
 ---
 
-## Future improvements
+# Future improvements
 
 <details>
   <summary>Click to expand</summary>
@@ -405,7 +408,3 @@ Section 4 (anti-duplication strategy) references SKILL behavioral guidance, but 
 
 
 </details>
-
-## Troubleshooting
-
-...
