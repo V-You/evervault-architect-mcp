@@ -22,20 +22,30 @@ from fastmcp.server.apps import AppConfig
 from fastmcp.tools.tool import ToolResult
 from mcp.types import TextContent
 
-from evervault_mcp.demo_mode import DemoMode, get_demo_mode, load_fixture, with_fallback
+from evervault_mcp.demo_mode import DemoMode, get_demo_mode, load_fixture
 from evervault_mcp.errors import EvervaultAPIError
 from evervault_mcp.ev_api import EvervaultClient
 from evervault_mcp.redact import setup_logging
 from evervault_mcp.schema_analyzer import analyze_schema
 from evervault_mcp.widgets import (
+    render_docs_panel,
     render_encrypt_result,
+    render_function_run,
     render_inspect_result,
+    render_relay_config,
+    render_relay_dashboard,
     render_schema_analysis,
 )
 
 log = logging.getLogger("evervault_mcp.server")
 
 DOCS_PATH = Path(__file__).parent / "docs_context.md"
+
+_DOCS_SOURCES = [
+    {"title": "Core concepts", "url": "https://docs.evervault.com/core-concepts"},
+    {"title": "Relay", "url": "https://docs.evervault.com/relay"},
+    {"title": "Functions", "url": "https://docs.evervault.com/functions"},
+]
 
 mcp = FastMCP(
     "Evervault Architect",
@@ -260,8 +270,56 @@ def inspect_result_widget() -> str:
     return render_inspect_result(data)
 
 
-@mcp.tool()
-async def ev_docs_query(question: str) -> dict[str, Any]:
+@mcp.resource("ui://evervault-architect/docs-panel.html")
+def docs_panel_widget() -> str:
+    """Interactive documentation panel widget."""
+    data = _last_results.get("docs", {
+        "question": "",
+        "documentation": "",
+        "sources": [],
+        "_source": "local",
+    })
+    return render_docs_panel(data)
+
+
+@mcp.resource("ui://evervault-architect/relay-config.html")
+def relay_config_widget() -> str:
+    """Interactive relay configuration widget."""
+    data = _last_results.get("relay_create", {
+        "relay": {},
+        "_source": "local",
+    })
+    return render_relay_config(data)
+
+
+@mcp.resource("ui://evervault-architect/relay-dashboard.html")
+def relay_dashboard_widget() -> str:
+    """Interactive relay dashboard widget."""
+    data = _last_results.get("relay_list", {
+        "relays": [],
+        "count": 0,
+        "_source": "local",
+    })
+    return render_relay_dashboard(data)
+
+
+@mcp.resource("ui://evervault-architect/function-run.html")
+def function_run_widget() -> str:
+    """Interactive function execution result widget."""
+    data = _last_results.get("function_run", {
+        "function_name": "---",
+        "status": "unknown",
+        "execution_time_ms": None,
+        "result": {},
+        "_source": "local",
+    })
+    return render_function_run(data)
+
+
+@mcp.tool(
+    app=AppConfig(resource_uri="ui://evervault-architect/docs-panel.html"),
+)
+async def ev_docs_query(question: str) -> ToolResult:
     """Query bundled Evervault documentation for contextual answers.
 
     Returns the full documentation context for the LLM to extract a
@@ -272,25 +330,42 @@ async def ev_docs_query(question: str) -> dict[str, Any]:
         question: natural-language question about Evervault.
     """
     if not DOCS_PATH.exists():
-        return {
-            "error": "docs_context.md not found",
-            "_source": "local",
-        }
+        return ToolResult(
+            content=[TextContent(type="text", text="Error: docs_context.md not found.")],
+            structured_content={"error": "docs_context.md not found", "_source": "local"},
+            meta={"ui": {"resourceUri": "ui://evervault-architect/docs-panel.html"}},
+        )
+
     content = DOCS_PATH.read_text(encoding="utf-8")
-    return {
+    full = {
         "question": question,
         "documentation": content,
+        "sources": _DOCS_SOURCES,
         "_source": "local",
     }
+    _last_results["docs"] = full
+
+    text = (
+        "Documentation retrieved. The widget above shows the full reference "
+        "material. Extract a concise answer to the user's question and cite "
+        "relevant sections. Do NOT paste the raw documentation."
+    )
+
+    return ToolResult(
+        content=[TextContent(type="text", text=text)],
+        structured_content=full,
+        meta={"ui": {"resourceUri": "ui://evervault-architect/docs-panel.html"}},
+    )
 
 
-@mcp.tool()
-@with_fallback("ev_relay_create")
+@mcp.tool(
+    app=AppConfig(resource_uri="ui://evervault-architect/relay-config.html"),
+)
 async def ev_relay_create(
     destination_domain: str,
     routes: list[dict[str, Any]],
     encrypt_empty_strings: bool = False,
-) -> dict[str, Any]:
+) -> ToolResult:
     """Create an Evervault Relay -- a network proxy that encrypts/decrypts data in transit.
 
     The tool accepts snake_case parameters; the API client maps them to
@@ -302,34 +377,103 @@ async def ev_relay_create(
             and response arrays with action/selections. See PRD for structure.
         encrypt_empty_strings: whether to encrypt empty string values.
     """
-    client = _get_client()
-    result = await client.create_relay(
-        destination_domain=destination_domain,
-        routes=routes,
-        encrypt_empty_strings=encrypt_empty_strings,
+    mode = get_demo_mode()
+    source = "live"
+
+    if mode == DemoMode.MOCK:
+        result = load_fixture("ev_relay_create")
+        result.pop("_source", None)
+        source = "mock"
+    else:
+        try:
+            client = _get_client()
+            result = await client.create_relay(
+                destination_domain=destination_domain,
+                routes=routes,
+                encrypt_empty_strings=encrypt_empty_strings,
+            )
+        except (EvervaultAPIError, Exception) as exc:
+            if mode == DemoMode.LIVE:
+                raise
+            log.warning("[ev_relay_create] live call failed (%s), falling back to fixture", str(exc)[:100])
+            result = load_fixture("ev_relay_create")
+            result.pop("_source", None)
+            source = "mock"
+
+    full = {"relay": result, "_source": source}
+    _last_results["relay_create"] = full
+
+    route_count = len(result.get("routes", []))
+    text = (
+        f"Relay created successfully with {route_count} route(s). "
+        "The widget above shows the relay configuration and routes. "
+        "Do NOT repeat the route table. Focus on:\n"
+        "- How to integrate the relay subdomain into the app\n"
+        "- Whether additional routes or response decryption rules are needed\n"
+        "- Next steps (e.g. test with sample requests)"
     )
-    return {"relay": result}
+
+    return ToolResult(
+        content=[TextContent(type="text", text=text)],
+        structured_content=full,
+        meta={"ui": {"resourceUri": "ui://evervault-architect/relay-config.html"}},
+    )
 
 
-@mcp.tool()
-@with_fallback("ev_relay_list")
-async def ev_relay_list() -> dict[str, Any]:
+@mcp.tool(
+    app=AppConfig(resource_uri="ui://evervault-architect/relay-dashboard.html"),
+)
+async def ev_relay_list() -> ToolResult:
     """List all configured Relays for the current Evervault app.
 
     Returns relays with their IDs, subdomains, destination domains,
     and route configurations.
     """
-    client = _get_client()
-    relays = await client.list_relays()
-    return {"relays": relays, "count": len(relays)}
+    mode = get_demo_mode()
+    source = "live"
+
+    if mode == DemoMode.MOCK:
+        fixture = load_fixture("ev_relay_list")
+        # list fixture is wrapped as {"data": [...], "_source": "mock"}
+        relays = fixture.get("data", [])
+        source = "mock"
+    else:
+        try:
+            client = _get_client()
+            relays = await client.list_relays()
+        except (EvervaultAPIError, Exception) as exc:
+            if mode == DemoMode.LIVE:
+                raise
+            log.warning("[ev_relay_list] live call failed (%s), falling back to fixture", str(exc)[:100])
+            fixture = load_fixture("ev_relay_list")
+            relays = fixture.get("data", [])
+            source = "mock"
+
+    full = {"relays": relays, "count": len(relays), "_source": source}
+    _last_results["relay_list"] = full
+
+    text = (
+        f"Found {len(relays)} relay(s). The widget above shows each relay's "
+        "domain, routes, and actions. Do NOT repeat the relay table. Focus on:\n"
+        "- Coverage gaps (domains or paths not yet proxied)\n"
+        "- Whether response decryption rules are needed\n"
+        "- Suggested next steps"
+    )
+
+    return ToolResult(
+        content=[TextContent(type="text", text=text)],
+        structured_content=full,
+        meta={"ui": {"resourceUri": "ui://evervault-architect/relay-dashboard.html"}},
+    )
 
 
-@mcp.tool()
-@with_fallback("ev_function_run")
+@mcp.tool(
+    app=AppConfig(resource_uri="ui://evervault-architect/function-run.html"),
+)
 async def ev_function_run(
     function_name: str,
     payload: dict[str, Any],
-) -> dict[str, Any]:
+) -> ToolResult:
     """Run an Evervault Function -- secure serverless code that auto-decrypts data.
 
     Encrypted values in the payload are automatically decrypted inside the
@@ -339,12 +483,56 @@ async def ev_function_run(
         function_name: name of the deployed function to run.
         payload: JSON payload to pass to the function (can include ev:... tokens).
     """
-    client = _get_client()
-    result = await client.run_function(
-        function_name=function_name,
-        payload=payload,
+    mode = get_demo_mode()
+    source = "live"
+
+    if mode == DemoMode.MOCK:
+        result = load_fixture("ev_function_run")
+        result.pop("_source", None)
+        source = "mock"
+    else:
+        try:
+            client = _get_client()
+            result = await client.run_function(
+                function_name=function_name,
+                payload=payload,
+            )
+        except (EvervaultAPIError, Exception) as exc:
+            if mode == DemoMode.LIVE:
+                raise
+            log.warning("[ev_function_run] live call failed (%s), falling back to fixture", str(exc)[:100])
+            result = load_fixture("ev_function_run")
+            result.pop("_source", None)
+            source = "mock"
+
+    # flatten: top-level keys instead of nesting inside function_result
+    full = {
+        "function_name": result.get("function_name", function_name),
+        "status": result.get("status", "unknown"),
+        "execution_time_ms": result.get("execution_time_ms"),
+        "result": result.get("result", {}),
+        "_source": source,
+    }
+    _last_results["function_run"] = full
+
+    name = full["function_name"]
+    status = full["status"]
+    time_ms = full.get("execution_time_ms", "---")
+
+    text = (
+        f"Function '{name}' executed in {time_ms}ms with status '{status}'. "
+        "The widget above shows the full result. Do NOT repeat the result "
+        "payload. Focus on:\n"
+        "- Whether the execution succeeded and what the result means\n"
+        "- Performance observations\n"
+        "- Suggested next steps"
     )
-    return {"function_result": result}
+
+    return ToolResult(
+        content=[TextContent(type="text", text=text)],
+        structured_content=full,
+        meta={"ui": {"resourceUri": "ui://evervault-architect/function-run.html"}},
+    )
 
 
 # -- entry point --------------------------------------------------------------
