@@ -4,6 +4,7 @@ NOTES.md
 bak/
 .tmp
 Sunnyvale-OH*.md
+*.code-workspace
 
 
 # Byte-compiled / optimized / DLL files

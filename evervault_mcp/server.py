@@ -13,10 +13,11 @@ FastMCP server with 7 tools (Phase 1-3):
 from __future__ import annotations
 
 import logging
+import os
 from pathlib import Path
 from typing import Any
 
-from dotenv import load_dotenv
+from dotenv import find_dotenv, load_dotenv
 from fastmcp import FastMCP
 from fastmcp.server.apps import AppConfig
 from fastmcp.tools.tool import ToolResult
@@ -67,6 +68,26 @@ def _get_client() -> EvervaultClient:
     if _client is None:
         _client = EvervaultClient()
     return _client
+
+
+def _load_environment() -> str | None:
+    """Load environment variables for the current workspace.
+
+    When the server is installed via uvx, python-dotenv's default lookup starts
+    from the installed package location rather than the consuming project.
+    Prefer an explicit env file, then search from the current working directory.
+    """
+    explicit_env_file = os.environ.get("EVERVAULT_MCP_ENV_FILE")
+    if explicit_env_file:
+        load_dotenv(explicit_env_file)
+        return explicit_env_file
+
+    dotenv_path = find_dotenv(usecwd=True)
+    if dotenv_path:
+        load_dotenv(dotenv_path)
+        return dotenv_path
+
+    return None
 
 
 # -- tools --------------------------------------------------------------------
@@ -540,7 +561,11 @@ async def ev_function_run(
 
 def main() -> None:
     """Start the MCP server."""
-    load_dotenv()
+    dotenv_path = _load_environment()
     setup_logging()
+    if dotenv_path:
+        log.info("loaded environment from %s", dotenv_path)
+    else:
+        log.info("no workspace .env found - using process environment")
     log.info("starting Evervault Architect MCP server")
     mcp.run(show_banner=False)

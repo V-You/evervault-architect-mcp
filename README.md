@@ -66,10 +66,15 @@ Create a `.env` file in the project root:
 ```env
 EV_APP_ID=app_77b94737782c
 EV_API_KEY=your_api_key_here
-EV_DEMO_MODE=auto-fallback    # live | mock | auto-fallback (default)
+EV_DEMO_MODE=auto-fallback    
+# live | mock | auto-fallback (default)
 ```
 
-> **Note:** The `.env` file is loaded by the Python server at startup via `python-dotenv`. No need to duplicate credentials in `mcp.json` -- the server reads them from `.env` automatically.
+> **Note:** Live Evervault API calls require `EV_APP_ID` and `EV_API_KEY`. A Team ID is not used by the API client.
+>
+> When the server is installed via `uvx`, it loads `.env` from the current workspace by default. If your MCP host starts the server outside the project root, export the variables before launch or set `EVERVAULT_MCP_ENV_FILE` to the absolute path of the `.env` file.
+>
+> To force real API calls and surface errors instead of falling back to fixtures, set `EV_DEMO_MODE=live` while validating your setup.
 
 ### VS Code MCP configuration
 
