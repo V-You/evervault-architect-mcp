@@ -245,6 +245,26 @@ Retrieves metadata for encrypted values (encryption time, data type, role, finge
 
 Creates an [Evervault Relay](https://docs.evervault.com/relay) – a network proxy that encrypts/decrypts data in transit.
 
+Prompt will need: exact relay target, route, payload shape, and fields to protect. Examples:
+
+For JSON calls:
+> /evervault Set up a live Evervault Relay for my Stripe integration. Use destination domain api.stripe.com. Create a route for POST /v1/payment_intents. My app sends JSON and the sensitive fields are at $.payment_method_data.card.number and $.payment_method_data.card.cvc. Encrypt those request fields, do not decrypt the response, and leave empty-string encryption off. Show me the relay config you plan to create. If any route detail is ambiguous, ask me a follow-up question instead of guessing.
+
+For form-encoded calls:
+> /evervault Set up a live Evervault Relay for my Stripe integration. Use destination domain api.stripe.com. I call POST /v1/payment_intents with form-encoded request fields, not JSON. I need card number and CVC protected in transit. Determine the correct Evervault route configuration for that payload shape, and ask me for any missing field mappings before creating the relay.
+
+From a specific app that was being developed (Sunnyvale)
+> /evervault Set up a live Evervault Relay for my Stripe integration. Use destination domain api.stripe.com. Create a route for POST /v1/payment_methods with form-encoded body. Decrypt request fields card[number], card[cvc], card[exp_month], and card[exp_year]. Do not decrypt the response. Leave empty-string encryption off. Also create a route for POST /v1/payment_intents with form-encoded body and no response decryption. Show me the relay config you plan to create first. If any route detail or selector syntax is ambiguous, ask me a follow-up question instead of guessing.
+
+Key details to include:
+
+- Destination domain
+- HTTP method and path
+- Whether the body is JSON or form-encoded
+- Exact fields to encrypt
+- Whether responses should be decrypted
+- An “ask before guessing” note, for any missing specifics
+
 - **API:** `POST https://api.evervault.com/relays`
 - **Widget:** Visual route map – source → Relay → destination
 
